@@ -1,5 +1,7 @@
 FROM python:3.11-slim-buster as prod
 
+RUN sed -i 's#http://deb.debian.org#https://mirrors.aliyun.com#g' /etc/apt/sources.list
+
 RUN apt-get update && apt-get install -y \
   default-libmysqlclient-dev \
   gcc \
@@ -8,7 +10,7 @@ RUN apt-get update && apt-get install -y \
   build-essential \
   && rm -rf /var/lib/apt/lists/*
 
-RUN pip install poetry==1.4.2
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple  && pip install poetry==1.4.2
 
 # Configuring poetry
 RUN poetry config virtualenvs.create false
@@ -19,6 +21,7 @@ WORKDIR /app/src
 
 # Installing requirements
 RUN poetry install --only main
+
 # Removing gcc
 RUN apt-get purge -y \
   g++ \
@@ -29,6 +32,7 @@ RUN apt-get purge -y \
 # Copying actual application
 COPY . /app/src/
 RUN poetry install --only main
+RUN pip install langchain==0.0.354
 
 CMD ["/usr/local/bin/python", "-m", "reworkd_platform"]
 
